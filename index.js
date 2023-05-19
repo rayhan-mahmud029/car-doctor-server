@@ -2,6 +2,11 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config()
 
+// -------------
+//      JWT => jot --------
+const jwt = require('jsonwebtoken');
+// create secret
+// require('crypto').randomBytes(64).toString('hex')
 
 const app = express()
 const port = process.env.PORT || 5000;
@@ -38,6 +43,19 @@ async function run() {
         const servicesCollection = client.db('carDoctor').collection('services');
         const bookingsCollection = client.db('carDoctor').collection('bookings');
 
+
+        //    jwt
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+                expiresIn: '1h'
+            })
+            console.log(token);
+            res.send({token})
+        })
+
+
+
         app.get('/services/', async (req, res) => {
             const result = await servicesCollection.find().toArray();
             res.send(result);
@@ -72,6 +90,28 @@ async function run() {
             }
             const result = await bookingsCollection.find(query).toArray();
             res.send(result);
+        })
+
+        // delete users booking
+        app.delete('/bookings/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await bookingsCollection.deleteOne(query);
+            res.send(result)
+        })
+
+        // update data
+        app.patch('/bookings/:id', async (req, res) => {
+            const id = req.params.id;
+            const data = req.body;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    payment_status: data.payment_status
+                }
+            }
+            const result = await bookingsCollection.updateOne(filter, updateDoc)
+            res.send(result)
         })
 
 
